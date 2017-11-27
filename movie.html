@@ -1,0 +1,476 @@
+﻿<!DOCTYPE html>
+<!-- saved from url=(0013)about:internet -->
+
+<!-- script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script -->
+<!-- script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.7.7/xlsx.core.min.js"></script -->
+
+<link href="css/jquery-ui.css" rel="stylesheet">
+<style style="text/css">
+	body {
+		font-size:9pt;
+		font-family:돋움, Dotum;
+		color:#000;
+		padding:5px 10px 5px 5px;
+	}
+
+	table {border-collapse:collapse;border:0;}
+	.list {line-height:1.3;word-break:break-all;width:100%}
+	.list thead tr th {
+		padding:8px 5px 8px 5px;
+		border-top:2px solid #5085c0;
+		border-bottom:2px solid #f4f4f4;
+		background:#FFF url(img/bg_slice.gif) no-repeat left bottom;
+		cursor:pointer;
+	}
+	.list thead tr th.thFirst {
+		background:#fff url(img/bg_slice.gif) no-repeat right bottom;
+	}
+
+	.list tbody tr:nth-child(5n) {background-color:#F5F5F5}
+	.list tbody tr td {padding:8px 5px 4px 5px;border-bottom:1px solid #e0e0e0;word-break:break-all;cursor:pointer;}
+	.list tbody .image,
+	.list tbody .year {text-align:center;font:Tahoma;padding-bottom:8px;}
+
+	#_listDiv {
+		position:relative;
+		z-index:100;
+		overflow-y:auto;
+		padding-bottom:5px;
+		border-bottom:1px solid #5085c0;
+		height:calc(100vh - 100px);
+	}
+
+	.focushover {
+		color:white;
+		opacity: 0.9;
+		filter: alpha(opacity=90); /* for IE */
+	}
+
+	.ui-progressbar {
+		position: relative;
+  }
+  .progress-label {
+    position: absolute;
+    left: 50%;
+    top: 4px;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #fff;
+  }
+
+</style>
+
+<script type="text/javascript" src="./js/jquery.min.js"></script>
+<script type="text/javascript" src="./js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="./js/xlsx.core.min.js"></script>
+<script type="text/javascript" src="./js/jquery.tablesorter.js"></script>
+
+<script>
+	var aCountry	= [];
+	var aDirector	= [];
+	var aActor		= [];
+	var aYear			= [];
+
+	// IndexedDB 초기화
+	var db = new function(){
+		window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+		var IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction;
+		var IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange;
+		var dataBaseName		= "decoyMovie";
+		var dataBaseVersion = 1;
+		var tIdx = 1;
+		var store, idxDB, transaction, tmpDB;
+
+		_this = this;
+
+		try {
+			var req = window.indexedDB.open(dataBaseName, dataBaseVersion);
+					req.onupgradeneeded = function(event){
+						idxDB = event.target.result;
+
+						setTable(idxDB, 'listMovie', ['year', 'title', 'genre', 'country', 'director', 'actor']);
+						setTable(idxDB, 'arrActor');
+						setTable(idxDB, 'arrDirector');
+						setTable(idxDB, 'arrCountry');
+					}
+
+					req.onsuccess = function(event){
+						idxDB = event.target.result;
+						_this = setMethod();
+						init_work();
+					}
+		} catch(e) {}
+
+		function setTable(db, table, index) {
+			try {
+				store = db.createObjectStore(table, {keyPath:'idx',autoIncrement:true});
+
+				$.each(index, function(key, value){
+					store.createIndex(value, value, {unique:false});
+				});
+			} catch(e) {}
+		}
+
+		function setMethod(){
+			_this.getTable = function(table){
+				return idxDB.transaction([table],"readwrite").objectStore(table);
+			}
+
+			_this.insert = function(option){
+				res	= _this.getTable(option.table).add(option.column);
+				res.transaction.oncomplete = function() {
+					$( "#progressbar" ).progressbar( "value", parseInt(((tIdx++) / option.tMax) * 100));
+				}
+				if(option.success) res.onsuccess = option.success;
+				res.onerror = function(e){
+					console.log(e.target.errorCode)
+				}
+			}
+
+			_this.update = function(option){
+				res = _this.getTable(option.table).put(option.column);
+				if(option.success) res.onsuccess = option.success;
+			}
+
+			_this.delete = function(option){
+				var idx = parseInt(option.idx);
+				res = _this.getTable(option.table).delete(idx);
+				if(option.success) res.onsuccess = option.success;
+			}
+
+			_this.clear = function(option){
+				res = _this.getTable(option.table).clear();
+				if(option.success) res.onsuccess = option.success;
+			}
+
+			_this.fetch = function(option){
+				res = _this.getTable(option.table);
+				if(option.idx){
+					var idx = parseInt(option.idx);
+					res.get(idx).onsuccess = option.success;
+				} else {
+					res.getAll().onsuccess = option.success;
+				}
+			}
+
+			_this.fetchSearch = function(option){
+				res = _this.getTable(option.table);
+
+				if(option.searchword.length) {		// 조건검색
+					var result = [];
+					var strKey = ""
+					var strWrd = (option.column == "year") ? option.searchword : "";
+
+					var range = IDBKeyRange.bound(strWrd, strWrd + "\uffff");
+					var index = res.index(option.column);
+							index.openCursor(range).onsuccess = function(e) {
+								var cursor = event.target.result;
+							  if (cursor) {
+									switch(option.column) {
+										case 'title'		: strKey = cursor.value.title; break;
+										case 'country'	: strKey = cursor.value.country; break;
+										case 'director' : strKey = cursor.value.director; break;
+										case 'actor' 		: strKey = cursor.value.actor; break;
+										case 'year' 		: strKey = cursor.value.year; break;
+									}	
+
+									if(strKey.indexOf(option.searchword) >= 0) {
+								    result.push(
+								    	{
+								    		actor:cursor.value.actor,
+								    		country:cursor.value.country,
+								    		director:cursor.value.director,
+								    		genre:cursor.value.country,
+								    		title:cursor.value.title,
+								    		year:cursor.value.year
+								    	}
+								    )
+								  }
+							    cursor.continue();
+							  } else {
+							  	fn_redraw_tbody(result);
+							  }
+							}
+				} else {													// 전체 검색
+					res.getAll().onsuccess = function(e) {
+						fn_redraw_tbody(e.target.result);
+					}
+				}				
+			}
+
+			return _this;
+		}
+	}
+
+	// Excel File Reading
+	function handleFile(e) {
+		//Get the files from Upload control
+		var files = e.target.files;
+		var i, f;
+
+		//Loop through files
+		for (i = 0, f = files[i]; i != files.length; ++i) {
+			var reader = new FileReader();
+			var name = f.name;
+
+			reader.onload = function (e) {
+				var data			= e.target.result;
+				var workbook	= XLSX.read(data, { type: 'binary' });
+				var roa				= XLSX.utils.sheet_to_json(workbook.Sheets["movie"]);
+				if (roa.length > 0) {
+					$( "#dialog" ).dialog( "open" );
+					event.preventDefault();
+
+					db.clear({table:"listMovie"});
+
+					roa.forEach(function(e) {
+						var option = {
+							table : "listMovie",
+							tMax : roa.length,
+							column:{
+								year:e.year,
+								title:e.titleKor,
+								genre:e.genre,
+								country:e.country,
+								director:e.director,
+								actor:e.actor
+							}
+						}
+						db.insert(option);
+					});
+				}
+			};
+			reader.readAsArrayBuffer(f);
+		}
+
+		init_work();
+	}
+
+	// Remove Duplicate Element in Array
+	function fn_RemoveDuplicateElement(aData) {
+		var aTmp	= [];
+
+		$.each(aData, function(key, value){
+			if($.inArray(value, aTmp) === -1 && value.length > 0 ) aTmp.push(value);
+		});
+
+		return aTmp.sort();
+	}
+
+	// Data Loading
+	function init_work() {
+		// 영화목록을 읽어온다.
+		$("#tblBody tr").remove();
+		db.fetch({table:'listMovie',success:function(event){
+			$.each(event.target.result, function(key, e){
+				aActor.push(e.actor);
+				aCountry.push(e.country);
+				aDirector.push(e.director);
+				aYear.push(e.year);
+			});
+
+			// 배열
+			aYear			= fn_RemoveDuplicateElement(aYear.join(",").replace(/ /gi, "").split(","));			// 년도
+			aActor		= fn_RemoveDuplicateElement(aActor.join(",").replace(/ /gi, "").split(","));		// 배우
+			aCountry	= fn_RemoveDuplicateElement(aCountry.join(",").replace(/ /gi, "").split(","));	// 국가
+			aDirector	= fn_RemoveDuplicateElement(aDirector.join(",").replace(/ /gi, "").split(","));	// 감독
+
+			fn_redraw_tbody(event.target.result);
+		}})
+	}
+
+  $(document).ready(function(){
+    $('#files').change(handleFile);
+
+		$("#tblMovie").tablesorter();
+
+		$('#hTable thead tr th').click(function(e){
+			$("#tblMovie thead th:eq(" + e.target.cellIndex + ")").trigger("click");
+		});
+
+		$('#selKey').change(function(e){
+			if (e.target.value == "year") {
+				if($("#years options").size() == 0) {
+					$.each(aYear.sort(function(a, b){return b-a}), function(key, e){
+						$("#years").append("<option value='" + e + "'>" + e + "</option>");
+					});					
+				}
+				$("#tags").hide();
+				$("#years").show();
+			} else {
+				$("#years").hide();
+				$("#tags").show();
+
+				switch(e.target.value) {
+						case 'country':
+	    				$( "#tags" ).autocomplete({source: aCountry});
+							break;
+						case 'director':
+							$( "#tags" ).autocomplete({source: aDirector});
+							break;
+						case 'actor':
+							$( "#tags" ).autocomplete({source: aActor});
+							break;
+						default :
+							try {$( "#tags" ).autocomplete("disable");} catch(e){}
+				}
+			}
+			$( "#tags" ).val("");
+		});
+
+		$( "#dialog" ).dialog({
+			autoOpen: false,
+			modal: true,
+			width: 400,
+			buttons: [
+				{
+					text: "닫기",
+					click: function() {
+						$( this ).dialog( "close" );
+					}
+				}
+			]
+		});
+
+    $("#progressbar").progressbar({
+      value: false,
+      change: function() {
+        $(".progress-label").text($("#progressbar").progressbar("value") + "%" );
+      },
+      complete: function() {
+        $(".progress-label").text("Loading Complete!");
+        setTimeout(
+        	function() {
+						init_work();
+						$("#dialog").dialog("close");
+						fn_clear_file_value("#files");
+					},
+					1000
+				);
+      }
+    });
+
+	});
+
+	function fn_clear_file_value(e_obj) {
+		var agent = navigator.userAgent.toLowerCase();
+
+		if (agent.indexOf("msie") != -1) {
+			// ie 일때 input[type=file] init.
+			$(e_obj).replaceWith( $("#filename").clone(true) );
+		} else {
+			// other browser 일때 input[type=file] init.
+			$(e_obj).val("");
+		}
+	}
+
+	function fn_redraw_tbody(e_obj) {
+		// 영화목록을 읽어온다.
+		$("#tblBody tr").remove();
+
+		$.each(e_obj, function(key, e){
+			var row = $("<tr class='trclass'></tr>")
+					row.append($("<td class='image'>" + (key + 1) + "</td>"));
+					row.append($("<td class='year'>" + e.year + "</td>"));
+					row.append($("<td class='title'>" + e.title + "</td>"));
+					row.append($("<td class='country'>" + e.country + "</td>"));
+					row.append($("<td class='director'>" + e.director + "</td>"));
+					row.append($("<td class='actor'>" + e.actor + "</td>"));
+			$("#tblBody").append(row);
+		});
+
+		$(".trclass").hover(
+			function () {
+				$(this).addClass("focushover");
+				var $this = $(this);
+    		$this.data('bgcolor', $this.css('background-color')).css('background-color', '#5091F1');
+			},
+				function () {
+					$(this).removeClass("focushover");
+					var $this = $(this);
+      		$this.css('background-color', $this.data('bgcolor'));
+			}
+		);
+
+		// 테이블 정리를 위해서 데이터 갱신
+		$("#tblMovie").trigger('update');
+	}
+
+	function test() {
+		var selKey = $("#selKey option:selected").val();
+		var selWrd = (selKey == "year") ? $("#years option:selected").val() : $("#tags").val();
+
+		db.fetchSearch({table:'listMovie', column:selKey, searchword:selWrd})
+	}
+</script>
+
+
+<div style='width:100%'>
+<table style='width:100%'>
+	<tr>
+		<Td>
+			<input type="file" id="files" name="files">
+		</Td>
+		<Td width=100px>
+			<select style='width:100px;height:24px;' id='selKey'>
+				<option value='title'>제목</option>
+				<option value='year'>년도</option>
+				<option value='country'>국가</option>
+				<option value='director'>감독</option>
+				<option value='actor'>배우</option>
+			</select>
+		</Td>
+		<Td width=200px>
+			<input type=text id='tags' style='width:200px;height:18px;'>
+			<select id='years' style='width:204px;display:none;height:24px;'></select>
+		</Td>
+		<Td width=100px>
+			<input type=button value='검색' onClick='test();' style='width:100px;'>
+		</Td>
+	</tr>
+</table>
+</div>
+
+<div style='width:100%;margin-top:5px;'>
+<div style="position:relative">
+	<table id='hTable' class="list">
+		<thead>
+			<tr>
+				<th scope="col" width="30" class="thFirst">순번</th>
+				<th scope="col" width="40">년도</th>
+				<th scope="col" width="200">제목</th>
+				<th scope="col" width="100">국가</th>
+				<th scope="col" width="200">감독</th>
+				<th scope="col">배우</th>
+			</tr>
+		</thead>
+	</table>
+</div>
+<div id="_listDiv">
+	<table id='tblMovie' class="list tablesorter" style='table-layout:fixed'>
+		<colgroup>
+			<col width=40></col>
+			<col width=50></col>
+			<col width=210></col>
+			<col width=110></col>
+			<col width=210></col>
+			<col></col>
+		</colgroup>
+		<thead style='display:none'>
+			<tr>
+				<th scope="col" width="30" class="thFirst">순번</th>
+				<th scope="col" width="40">년도</th>
+				<th scope="col" width="200">제목</th>
+				<th scope="col" width="100">국가</th>
+				<th scope="col" width="200">감독</th>
+				<th scope="col">배우</th>
+			</tr>
+		</thead>
+		<tbody id="tblBody"></tbody>
+	</table>
+</div>
+</div>
+
+<div id="dialog" title="Movie Data Loading">
+	<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+	<div id="progressbar"><div class="progress-label">Loading...</div></div>
+</div>
