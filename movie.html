@@ -1,4 +1,4 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <!-- saved from url=(0013)about:internet -->
 
 <!-- script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script -->
@@ -8,7 +8,7 @@
 <style style="text/css">
 	body {
 		font-size:9pt;
-		font-family:ë‹ì›€, Dotum;
+		font-family:µ¸¿ò, Dotum;
 		color:#000;
 		padding:5px 10px 5px 5px;
 	}
@@ -70,7 +70,7 @@
 	var aActor		= [];
 	var aYear			= [];
 
-	// IndexedDB ì´ˆê¸°í™”
+	// IndexedDB ÃÊ±âÈ­
 	var db = new function(){
 		window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 		var IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction;
@@ -141,7 +141,7 @@
 				res = _this.getTable(option.table).clear();
 				if(option.success) res.onsuccess = option.success;
 			}
-
+ 
 			_this.fetch = function(option){
 				res = _this.getTable(option.table);
 				if(option.idx){
@@ -155,7 +155,7 @@
 			_this.fetchSearch = function(option){
 				res = _this.getTable(option.table);
 
-				if(option.searchword.length) {		// ì¡°ê±´ê²€ìƒ‰
+				if(option.searchword.length) {		// Á¶°Ç°Ë»ö
 					var result = [];
 					var strKey = ""
 					var strWrd = (option.column == "year") ? option.searchword : "";
@@ -190,7 +190,7 @@
 							  	fn_redraw_tbody(result);
 							  }
 							}
-				} else {													// ì „ì²´ ê²€ìƒ‰
+				} else {													// ÀüÃ¼ °Ë»ö
 					res.getAll().onsuccess = function(e) {
 						fn_redraw_tbody(e.target.result);
 					}
@@ -258,7 +258,7 @@
 
 	// Data Loading
 	function init_work() {
-		// ì˜í™”ëª©ë¡ì„ ì½ì–´ì˜¨ë‹¤.
+		// ¿µÈ­¸ñ·ÏÀ» ÀĞ¾î¿Â´Ù.
 		$("#tblBody tr").remove();
 		db.fetch({table:'listMovie',success:function(event){
 			$.each(event.target.result, function(key, e){
@@ -268,11 +268,11 @@
 				aYear.push(e.year);
 			});
 
-			// ë°°ì—´
-			aYear			= fn_RemoveDuplicateElement(aYear.join(",").replace(/ /gi, "").split(","));			// ë…„ë„
-			aActor		= fn_RemoveDuplicateElement(aActor.join(",").replace(/ /gi, "").split(","));		// ë°°ìš°
-			aCountry	= fn_RemoveDuplicateElement(aCountry.join(",").replace(/ /gi, "").split(","));	// êµ­ê°€
-			aDirector	= fn_RemoveDuplicateElement(aDirector.join(",").replace(/ /gi, "").split(","));	// ê°ë…
+			// ¹è¿­
+			aYear			= fn_RemoveDuplicateElement(aYear.join(",").replace(/ /gi, "").split(","));			// ³âµµ
+			aActor		= fn_RemoveDuplicateElement(aActor.join(",").replace(/ /gi, "").split(","));		// ¹è¿ì
+			aCountry	= fn_RemoveDuplicateElement(aCountry.join(",").replace(/ /gi, "").split(","));	// ±¹°¡
+			aDirector	= fn_RemoveDuplicateElement(aDirector.join(",").replace(/ /gi, "").split(","));	// °¨µ¶
 
 			fn_redraw_tbody(event.target.result);
 		}})
@@ -323,7 +323,7 @@
 			width: 400,
 			buttons: [
 				{
-					text: "ë‹«ê¸°",
+					text: "´İ±â",
 					click: function() {
 						$( this ).dialog( "close" );
 					}
@@ -355,16 +355,16 @@
 		var agent = navigator.userAgent.toLowerCase();
 
 		if (agent.indexOf("msie") != -1) {
-			// ie ì¼ë•Œ input[type=file] init.
+			// ie ÀÏ¶§ input[type=file] init.
 			$(e_obj).replaceWith( $("#filename").clone(true) );
 		} else {
-			// other browser ì¼ë•Œ input[type=file] init.
+			// other browser ÀÏ¶§ input[type=file] init.
 			$(e_obj).val("");
 		}
 	}
 
 	function fn_redraw_tbody(e_obj) {
-		// ì˜í™”ëª©ë¡ì„ ì½ì–´ì˜¨ë‹¤.
+		// ¿µÈ­¸ñ·ÏÀ» ÀĞ¾î¿Â´Ù.
 		$("#tblBody tr").remove();
 
 		$.each(e_obj, function(key, e){
@@ -391,7 +391,7 @@
 			}
 		);
 
-		// í…Œì´ë¸” ì •ë¦¬ë¥¼ ìœ„í•´ì„œ ë°ì´í„° ê°±ì‹ 
+		// Å×ÀÌºí Á¤¸®¸¦ À§ÇØ¼­ µ¥ÀÌÅÍ °»½Å
 		$("#tblMovie").trigger('update');
 	}
 
@@ -412,11 +412,11 @@
 		</Td>
 		<Td width=100px>
 			<select style='width:100px;height:24px;' id='selKey'>
-				<option value='title'>ì œëª©</option>
-				<option value='year'>ë…„ë„</option>
-				<option value='country'>êµ­ê°€</option>
-				<option value='director'>ê°ë…</option>
-				<option value='actor'>ë°°ìš°</option>
+				<option value='title'>Á¦¸ñ</option>
+				<option value='year'>³âµµ</option>
+				<option value='country'>±¹°¡</option>
+				<option value='director'>°¨µ¶</option>
+				<option value='actor'>¹è¿ì</option>
 			</select>
 		</Td>
 		<Td width=200px>
@@ -424,7 +424,7 @@
 			<select id='years' style='width:204px;display:none;height:24px;'></select>
 		</Td>
 		<Td width=100px>
-			<input type=button value='ê²€ìƒ‰' onClick='test();' style='width:100px;'>
+			<input type=button value='°Ë»ö' onClick='test();' style='width:100px;'>
 		</Td>
 	</tr>
 </table>
@@ -435,12 +435,12 @@
 	<table id='hTable' class="list">
 		<thead>
 			<tr>
-				<th scope="col" width="30" class="thFirst">ìˆœë²ˆ</th>
-				<th scope="col" width="40">ë…„ë„</th>
-				<th scope="col" width="200">ì œëª©</th>
-				<th scope="col" width="100">êµ­ê°€</th>
-				<th scope="col" width="200">ê°ë…</th>
-				<th scope="col">ë°°ìš°</th>
+				<th scope="col" width="30" class="thFirst">¼ø¹ø</th>
+				<th scope="col" width="40">³âµµ</th>
+				<th scope="col" width="200">Á¦¸ñ</th>
+				<th scope="col" width="100">±¹°¡</th>
+				<th scope="col" width="200">°¨µ¶</th>
+				<th scope="col">¹è¿ì</th>
 			</tr>
 		</thead>
 	</table>
@@ -457,12 +457,12 @@
 		</colgroup>
 		<thead style='display:none'>
 			<tr>
-				<th scope="col" width="30" class="thFirst">ìˆœë²ˆ</th>
-				<th scope="col" width="40">ë…„ë„</th>
-				<th scope="col" width="200">ì œëª©</th>
-				<th scope="col" width="100">êµ­ê°€</th>
-				<th scope="col" width="200">ê°ë…</th>
-				<th scope="col">ë°°ìš°</th>
+				<th scope="col" width="30" class="thFirst">¼ø¹ø</th>
+				<th scope="col" width="40">³âµµ</th>
+				<th scope="col" width="200">Á¦¸ñ</th>
+				<th scope="col" width="100">±¹°¡</th>
+				<th scope="col" width="200">°¨µ¶</th>
+				<th scope="col">¹è¿ì</th>
 			</tr>
 		</thead>
 		<tbody id="tblBody"></tbody>
